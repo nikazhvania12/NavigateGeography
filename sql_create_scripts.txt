@@ -1,0 +1,181 @@
+CREATE SEQUENCE public.operation_id_seq;
+
+CREATE TABLE public.country (
+    id integer DEFAULT nextval('public.operation_id_seq'::regclass) NOT NULL,
+    name character varying NOT NULL,
+    water_supply bigint NOT NULL,
+    resources integer NOT NULL,
+    population bigint NOT NULL,
+    flag_path character varying
+);
+
+ALTER TABLE ONLY public.country
+    ADD CONSTRAINT country_pkey PRIMARY KEY (id);
+
+CREATE TABLE public.country_additional_fields (
+    country_id integer NOT NULL,
+    description character varying NOT NULL,
+    is3rdworld boolean,
+    key_fact character varying
+);
+
+CREATE TABLE public."user" (
+    id integer DEFAULT nextval('public.operation_id_seq'::regclass) NOT NULL,
+    email character varying NOT NULL,
+    password character varying NOT NULL,
+    username character varying NOT NULL,
+    can_edit boolean NOT NULL
+);
+
+
+ALTER TABLE ONLY public."user"
+    ADD CONSTRAINT user_pkey PRIMARY KEY (id);
+
+
+CREATE OR REPLACE FUNCTION public.get_countries_filters(
+	watersupplyfrom bigint,
+	resourcesfrom integer,
+	populationfrom bigint,
+	watersupplyto bigint,
+	resourcesto integer,
+	populationto bigint)
+    RETURNS TABLE(id integer, name character varying) 
+    LANGUAGE 'plpgsql'
+    COST 100
+    VOLATILE PARALLEL UNSAFE
+    ROWS 1000
+
+AS $BODY$
+BEGIN
+    RETURN QUERY
+    SELECT c.id AS id, c.name AS name
+    FROM public.country c
+	WHERE 
+	COALESCE(waterSupplyFrom, 0) <= COALESCE(c.water_supply, 0) AND 
+	COALESCE(waterSupplyTo, 0) >= COALESCE(c.water_supply, 0) AND
+	COALESCE(resourcesFrom, 0) <= COALESCE(c.resources, 0) AND 
+	COALESCE(resourcesTo, 0) >= COALESCE(c.resources, 0) AND
+	COALESCE(populationFrom, 0) <= COALESCE(c.population, 0) AND
+	COALESCE(populationTo, 0) >= COALESCE(c.population, 0)
+    ORDER BY c.name;
+END;
+$BODY$;
+
+
+CREATE OR REPLACE FUNCTION public.get_countries_maximums(
+	)
+    RETURNS TABLE(id integer, name character varying, water_supply bigint, resources integer, population bigint) 
+    LANGUAGE 'plpgsql'
+    COST 100
+    VOLATILE PARALLEL UNSAFE
+    ROWS 1000
+
+AS $BODY$
+BEGIN
+RETURN QUERY (
+  SELECT 
+	w.id, w.name, w.water_supply, w.resources, w.population 
+	FROM public.country w
+  ORDER BY water_supply DESC
+  LIMIT 1
+)
+UNION
+(
+  SELECT 
+	p.id, p.name, p.water_supply, p.resources, p.population 
+	FROM public.country p
+  ORDER BY population DESC
+  LIMIT 1
+) ORDER BY population DESC;
+END;
+$BODY$;
+
+
+CREATE OR REPLACE FUNCTION public.get_country_by_name(
+	nameinp character varying)
+    RETURNS TABLE(id integer, name character varying, water_supply bigint, resources integer, population bigint, description character varying, is3rdworld boolean, key_fact character varying, flag_path character varying) 
+    LANGUAGE 'plpgsql'
+    COST 100
+    VOLATILE PARALLEL UNSAFE
+    ROWS 1000
+
+AS $BODY$
+BEGIN
+    RETURN QUERY
+    SELECT c.id, c.name, c.water_supply, c.resources, c.population,
+           a.description, a.is3rdworld, a.key_fact, c.flag_path
+    FROM public.country c
+    LEFT JOIN public.country_additional_fields a ON c.id = a.country_id
+    WHERE c.name ILIKE '%' || nameinp || '%'
+	ORDER BY c.id;
+END;
+$BODY$;
+
+
+CREATE OR REPLACE FUNCTION public.get_current_user(
+	_userid integer)
+    RETURNS TABLE(id integer, email character varying, username character varying, can_edit boolean) 
+    LANGUAGE 'plpgsql'
+    COST 100
+    VOLATILE PARALLEL UNSAFE
+    ROWS 1000
+
+AS $BODY$
+BEGIN
+    RETURN QUERY
+    SELECT u.id, u.email, u.username, u.can_edit
+    FROM public.user u
+	WHERE u.id = _userId;
+END;
+$BODY$;
+
+
+CREATE OR REPLACE FUNCTION public.get_user(
+	email_request character varying,
+	password_request character varying)
+    RETURNS TABLE(id integer, email character varying, password character varying, username character varying, can_edit boolean) 
+    LANGUAGE 'plpgsql'
+    COST 100
+    VOLATILE PARALLEL UNSAFE
+    ROWS 1000
+
+AS $BODY$
+BEGIN
+    RETURN QUERY
+    SELECT *
+    FROM public.user u
+	WHERE u.email = email_request AND u.password = password_request;
+END;
+$BODY$;
+
+
+CREATE OR REPLACE FUNCTION public.update_country(
+	_watersupply bigint,
+	_resources integer,
+	_population integer,
+	_description character varying,
+	_is3rdworld boolean,
+	_keyfact character varying,
+	_id integer)
+    RETURNS void
+    LANGUAGE 'plpgsql'
+    COST 100
+    VOLATILE PARALLEL UNSAFE
+AS $BODY$
+BEGIN
+	UPDATE public.country
+	SET 
+	water_supply=_watersupply, 
+	resources=_resources, 
+	population=_population
+	WHERE id = _id;
+
+	UPDATE public.country_additional_fields
+	SET 
+	description=_description, 
+	is3rdworld=_is3rdworld, 
+	key_fact=_keyfact
+	WHERE country_id = _id;
+END;
+$BODY$;
+
