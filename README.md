@@ -28,5 +28,5 @@ Modify the enviroment section to match the properties of your created PostgreSQL
 
 ## Populate Database
 To finalize Database Modification, you will need to create neccesarry tables/functions and insert valid data. in pgAdmin 4, run a query tool and paste the contents of two files provided below:
-- [Create Tables, Sequences and Functions](./data/sql_create_scripts.txt)
-- [Insert Data](./data/sql_insert_scripts.txt)
+- [Create Tables, Sequences and Functions](./sql_create_scripts.txt)
+- [Insert Data](./sql_insert_scripts.txt)
