@@ -44,6 +44,8 @@ In **pgAdmin 4**, open the Query Tool and run the contents of the following file
 
 ## Run the Project
 
+Open Docker Desktop. You will be able to see both applications after you run the commands below.
+
 Open your terminal and navigate to the cloned project:
 
 ```bash
