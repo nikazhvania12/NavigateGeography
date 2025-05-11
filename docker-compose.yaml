@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./navigate-geography-api
+    container_name: flask_app
+    environment:
+      DB_HOST: host.docker.internal  # For Windows/Mac
+      DB_NAME: postgres
+      DB_USER: postgres
+      DB_PASSWORD: App2025#
+      DB_PORT: 5432
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./navigate-geography-api:/app
+    command: python api.py
+    working_dir: /app
+    networks:
+      - app-net
+
+  frontend:
+    build:
+      context: ./navigate-geography-client
+    container_name: react_app
+    ports:
+      - "3000:3000"
+    working_dir: /app
+    command: npm start
+    networks:
+      - app-net
+
+networks:
+  app-net:
+    driver: bridge
