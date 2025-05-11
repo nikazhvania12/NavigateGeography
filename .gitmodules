@@ -1,6 +1,0 @@
-[submodule "navigate-geography-api"]
-	path = navigate-geography-api
-	url = https://github.com/nikazhvania12/navigate-geography-api.git
-[submodule "navigate-geography-client"]
-	path = navigate-geography-client
-	url = https://github.com/nikazhvania12/navigate-geography-client.git
